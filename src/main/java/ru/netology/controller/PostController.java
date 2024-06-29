@@ -1,41 +1,34 @@
-package ru.netology.controller;
+package ru.netology.repository;
 
-import com.google.gson.Gson;
 import ru.netology.model.Post;
-import ru.netology.service.PostService;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.Reader;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class PostController {
-    public static final String APPLICATION_JSON = "application/json";
-    private final PostService service;
+    private final Map<Long, Post> posts = new ConcurrentHashMap<>();
+    private final AtomicLong postIdGenerator = new AtomicLong(0);
 
-    public PostController(PostService service) {
-        this.service = service;
+    public Map<Long, Post> all() {
+        return posts;
     }
 
-    public void all(HttpServletResponse response) throws IOException {
-        response.setContentType(APPLICATION_JSON);
-        final var data = service.all();
-        final var gson = new Gson();
-        response.getWriter().print(gson.toJson(data));
+    public Optional<Post> getById(long id) {
+        return Optional.ofNullable(posts.get(id));
     }
 
-    public void getById(long id, HttpServletResponse response) {
-        // TODO: deserialize request & serialize response
+    public Post save(Post post) {
+        if (post.getId() == 0) {
+            long newId = postIdGenerator.incrementAndGet();
+            post.setId(newId);
+        }
+        posts.put(post.getId(), post);
+        return post;
     }
 
-    public void save(Reader body, HttpServletResponse response) throws IOException {
-        response.setContentType(APPLICATION_JSON);
-        final var gson = new Gson();
-        final var post = gson.fromJson(body, Post.class);
-        final var data = service.save(post);
-        response.getWriter().print(gson.toJson(data));
-    }
-
-    public void removeById(long id, HttpServletResponse response) {
-        // TODO: deserialize request & serialize response
+    public void removeById(long id) {
+        posts.remove(id);
     }
 }
